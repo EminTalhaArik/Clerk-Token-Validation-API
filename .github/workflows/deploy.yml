@@ -34,11 +34,7 @@ jobs:
             git pull origin main
           else
             echo "Cloning repository..."
-            if [ -n "${{ secrets.ACCESS_TOKEN }}" ]; then
-              git clone https://${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}.git clerk-token-validation-api
-            else
-              git clone https://github.com/${{ github.repository }}.git clerk-token-validation-api
-            fi
+            git clone https://github.com/${{ github.repository }}.git clerk-token-validation-api
             cd clerk-token-validation-api
           fi
           
