@@ -17,27 +17,52 @@ jobs:
         username: ${{ secrets.VDS_USER }}
         password: ${{ secrets.VDS_PASSWORD }}
         script: |
-          # Navigate to applications directory
-          cd /opt/applications/
+          set -e
+          echo "=== Starting deployment ==="
+          
+          # Check if directory exists and create if needed
+          echo "=== Checking /opt/applications directory ==="
+          sudo mkdir -p /opt/applications
+          cd /opt/applications
+          pwd
           
           # Clone or pull repository
+          echo "=== Repository operations ==="
           if [ -d "clerk-token-validation-api" ]; then
+            echo "Directory exists, pulling latest changes..."
             cd clerk-token-validation-api
             git pull origin main
           else
-            git clone https://${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}.git clerk-token-validation-api
+            echo "Cloning repository..."
+            if [ -n "${{ secrets.ACCESS_TOKEN }}" ]; then
+              git clone https://${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}.git clerk-token-validation-api
+            else
+              git clone https://github.com/${{ github.repository }}.git clerk-token-validation-api
+            fi
             cd clerk-token-validation-api
           fi
           
+          echo "=== Current directory and files ==="
+          pwd
+          ls -la
+          
           # Stop and remove existing container
-          docker stop clerk-token-validation-api || true
-          docker rm clerk-token-validation-api || true
-          docker rmi clerk-token-validation-api || true
+          echo "=== Stopping existing container ==="
+          docker stop clerk-token-validation-api || echo "Container was not running"
+          docker rm clerk-token-validation-api || echo "Container did not exist"
+          docker rmi clerk-token-validation-api || echo "Image did not exist"
           
           # Build new image
+          echo "=== Building Docker image ==="
           docker build -t clerk-token-validation-api .
+          echo "Image built successfully"
+          
+          # Check if network exists
+          echo "=== Checking Docker network ==="
+          docker network ls | grep nginx-network || docker network create nginx-network
           
           # Run new container
+          echo "=== Starting new container ==="
           docker run -d \
             --name clerk-token-validation-api \
             --network nginx-network \
@@ -48,4 +73,10 @@ jobs:
             -e CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY }}" \
             clerk-token-validation-api
           
-          echo "Deployment completed successfully!"
+          echo "=== Container started, checking status ==="
+          docker ps -a | grep clerk-token-validation-api
+          
+          echo "=== Container logs ==="
+          docker logs clerk-token-validation-api
+          
+          echo "=== Deployment completed successfully! ==="
