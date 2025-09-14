@@ -48,6 +48,16 @@ jobs:
           docker rm clerk-token-validation-api || echo "Container did not exist"
           docker rmi clerk-token-validation-api || echo "Image did not exist"
           
+          # Check and free port 8004 if needed
+          echo "=== Checking port 8004 ==="
+          PORT_CONTAINER=$(docker ps --filter "publish=8004" --format "{{.Names}}" | head -n 1)
+          if [ ! -z "$PORT_CONTAINER" ]; then
+            echo "Port 8004 is used by container: $PORT_CONTAINER"
+            echo "Stopping container using port 8004..."
+            docker stop $PORT_CONTAINER || true
+            docker rm $PORT_CONTAINER || true
+          fi
+          
           # Build new image
           echo "=== Building Docker image ==="
           docker build -t clerk-token-validation-api .
@@ -62,7 +72,7 @@ jobs:
           docker run -d \
             --name clerk-token-validation-api \
             --network nginx-network \
-            -p 8002:3000 \
+            -p 8004:3000 \
             --restart always \
             -e PORT=3000 \
             -e NODE_ENV=production \
