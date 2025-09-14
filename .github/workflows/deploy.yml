@@ -1,4 +1,4 @@
-name: Deploy NestJS to VDS
+name: Deploy API to VDS
 on:
   push:
     branches: [ main ]
@@ -21,34 +21,31 @@ jobs:
           cd /opt/applications/
           
           # Clone or pull repository
-          if [ -d "ones-gg-api" ]; then
-            cd ones-gg-api
+          if [ -d "clerk-token-validation-api" ]; then
+            cd clerk-token-validation-api
             git pull origin main
           else
-            git clone https://${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}.git ones-gg-api
-            cd ones-gg-api
+            git clone https://${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}.git clerk-token-validation-api
+            cd clerk-token-validation-api
           fi
           
           # Stop and remove existing container
-          docker stop ones-gg-api || true
-          docker rm ones-gg-api || true
-          docker rmi ones-gg-api || true
+          docker stop clerk-token-validation-api || true
+          docker rm clerk-token-validation-api || true
+          docker rmi clerk-token-validation-api || true
           
           # Build new image
-          docker build -t ones-gg-api .
+          docker build -t clerk-token-validation-api .
           
           # Run new container
           docker run -d \
-            --name ones-gg-api \
+            --name clerk-token-validation-api \
             --network nginx-network \
             -p 8002:3000 \
             --restart always \
             -e PORT=3000 \
             -e NODE_ENV=production \
             -e CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY }}" \
-            -e SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-            -e SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -e SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
-            ones-gg-api
+            clerk-token-validation-api
           
           echo "Deployment completed successfully!"
