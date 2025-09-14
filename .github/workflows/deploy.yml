@@ -1,0 +1,54 @@
+name: Deploy NestJS to VDS
+on:
+  push:
+    branches: [ main ]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to VDS
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VDS_HOST }}
+        username: ${{ secrets.VDS_USER }}
+        password: ${{ secrets.VDS_PASSWORD }}
+        script: |
+          # Navigate to applications directory
+          cd /opt/applications/
+          
+          # Clone or pull repository
+          if [ -d "ones-gg-api" ]; then
+            cd ones-gg-api
+            git pull origin main
+          else
+            git clone https://${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}.git ones-gg-api
+            cd ones-gg-api
+          fi
+          
+          # Stop and remove existing container
+          docker stop ones-gg-api || true
+          docker rm ones-gg-api || true
+          docker rmi ones-gg-api || true
+          
+          # Build new image
+          docker build -t ones-gg-api .
+          
+          # Run new container
+          docker run -d \
+            --name ones-gg-api \
+            --network nginx-network \
+            -p 8002:3000 \
+            --restart always \
+            -e PORT=3000 \
+            -e NODE_ENV=production \
+            -e CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY }}" \
+            -e SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+            -e SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -e SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
+            ones-gg-api
+          
+          echo "Deployment completed successfully!"
