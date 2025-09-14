@@ -42,10 +42,17 @@ This application includes a secure Clerk JWT token validation API that validates
 
 ### Environment Setup
 
-1. Copy `.env.example` to `.env`
-2. Add your Clerk Secret Key to the `.env` file:
+1. Create a `.env` file in the project root
+2. Add your environment variables:
    ```
    CLERK_SECRET_KEY=your_clerk_secret_key_here
+   NODE_ENV=development
+   PORT=3000
+   
+   # Optional: Supabase Configuration
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
 ### API Endpoints

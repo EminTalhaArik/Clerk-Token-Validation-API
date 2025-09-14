@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { clerkClient } from '@clerk/backend';
+import { createClerkClient, verifyToken } from '@clerk/backend';
 import * as jwt from 'jsonwebtoken';
 
 export interface UserInfo {
@@ -22,12 +22,17 @@ export interface ValidationResponse {
 @Injectable()
 export class AuthService {
   private readonly clerkSecretKey: string;
+  private readonly clerkClient: ReturnType<typeof createClerkClient>;
 
   constructor() {
     this.clerkSecretKey = process.env.CLERK_SECRET_KEY;
     if (!this.clerkSecretKey) {
       throw new Error('CLERK_SECRET_KEY environment variable is required');
     }
+    
+    this.clerkClient = createClerkClient({
+      secretKey: this.clerkSecretKey,
+    });
   }
 
   async validateClerkToken(token: string): Promise<ValidationResponse> {
@@ -63,7 +68,7 @@ export class AuthService {
       }
 
       // Verify the token with Clerk
-      const verifiedToken = await clerkClient.verifyToken(cleanToken, {
+      const verifiedToken = await verifyToken(cleanToken, {
         secretKey: this.clerkSecretKey,
       });
 
@@ -76,7 +81,7 @@ export class AuthService {
       }
 
       // Get user information from Clerk
-      const user = await clerkClient.users.getUser(verifiedToken.sub);
+      const user = await this.clerkClient.users.getUser(verifiedToken.sub);
 
       if (!user) {
         return {
